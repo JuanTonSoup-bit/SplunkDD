@@ -1,0 +1,5 @@
+# Large binary installers — don't belong in git (GitHub blocks anything >100MB anyway)
+installers/
+*.msi
+*.exe
+*.zip
