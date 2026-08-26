@@ -6,9 +6,10 @@
 #         movement tooling leaves a 7045 behind.
 # Noise:  Legitimate software installs create services. Volume is low enough on a
 #         workstation to review each one, which is the right posture for this detection.
-# NOTE:   Field names beyond EventCode are unverified -- the Security/System channels use
-#         classic rendering and Splunk_TA_windows extraction, which has not been confirmed
-#         on this instance yet. EventCode itself is always present.
+# NOTE:   Splunk_TA_windows extraction on the classic channels is confirmed working
+#         (verified 2026-08-26: user and Account_Name populate on Security events). The
+#         7045-specific Service_* fields are still unconfirmed only because no 7045 event
+#         has occurred yet -- install any piece of software and one will appear.
 
 index=endpoint source="WinEventLog:System" EventCode=7045
 | table _time, host, Service_Name, Service_File_Name, Service_Type, Service_Start_Type

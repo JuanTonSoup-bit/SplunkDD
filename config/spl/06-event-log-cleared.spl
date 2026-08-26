@@ -6,7 +6,8 @@
 #         either someone is covering tracks, or an admin did something they should be able
 #         to account for.
 # Noise:  Effectively none. If this fires, find out why.
-# NOTE:   Field names beyond EventCode are unverified -- see note in 05.
+# NOTE:   Verified 2026-08-26 -- source, EventCode and user all populate on the classic
+#         Security channel via Splunk_TA_windows.
 
 index=endpoint (source="WinEventLog:Security" EventCode=1102) OR (source="WinEventLog:System" EventCode=104)
 | table _time, host, source, EventCode, user
