@@ -45,4 +45,11 @@ New-NetFirewallRule -DisplayName "Splunk Receiving 9997" -Direction Inbound -Loc
 Verified working: `Get-NetTCPConnection -LocalPort 9997` showed an `Established`
 connection from `192.168.1.90` once the main PC's forwarder came up.
 
+Same treatment for Splunk Web itself, so it's reachable from the main PC's browser at
+`http://192.168.1.192:8000` ahead of Tailscale (Phase 5) being set up:
+```powershell
+New-NetFirewallRule -DisplayName "Splunk Web 8000" -Direction Inbound -LocalPort 8000 -Protocol TCP -Action Allow -RemoteAddress 192.168.1.90 -Profile Any
+```
+Verified: rule shows `Profile: Any`, `RemoteAddress: 192.168.1.90`.
+
 ## Status: ✅ Done — index created, receiving port open, firewall rule scoped to the main PC's IP, confirmed receiving data (see phase2 doc)
