@@ -52,4 +52,23 @@ New-NetFirewallRule -DisplayName "Splunk Web 8000" -Direction Inbound -LocalPort
 ```
 Verified: rule shows `Profile: Any`, `RemoteAddress: 192.168.1.90`.
 
+### Known fragility: both rules are pinned to a DHCP address
+
+Scoping to `-RemoteAddress 192.168.1.90` is the right call security-wise — it beats
+opening these ports to the whole LAN. But `192.168.1.90` is a **DHCP lease** on the main
+PC (`PrefixOrigin : Dhcp`), not a static address. If that lease changes — router reboot,
+long absence, address-pool churn — both rules silently stop matching and the symptoms are
+nasty to read:
+
+- the forwarder stops delivering, but `SplunkForwarder` still shows `Running`
+- `index=endpoint` just goes quiet, with no error surfaced in Splunk Web
+- Splunk Web stops loading from the main PC with a *timeout* rather than a refusal
+
+The fix is a **DHCP reservation** for the main PC's MAC on the router, which pins
+`192.168.1.90` permanently. Worth doing before Phase 4 — a detection lab that quietly
+stops receiving data is worse than one that's obviously broken.
+
+Same reasoning applies to the laptop's own `192.168.1.192`, which `$IndexerAddr` in
+`main-pc-scripts/setup-main-pc.ps1` is hardcoded to. Reserve both.
+
 ## Status: ✅ Done — index created, receiving port open, firewall rule scoped to the main PC's IP, confirmed receiving data (see phase2 doc)

@@ -5,18 +5,21 @@
 
 .NOTES
   Run this in an ELEVATED PowerShell on the MAIN PC (not the Splunk machine).
-  EDIT the variables below before running:
-    - $ForwarderPassword : set the admin password for this forwarder instance
-    - $IndexerAddr       : change if the indexer's LAN IP changes
+  EDIT before running:
+    - $IndexerAddr : change if the indexer's LAN IP changes
+
+  The forwarder admin password is prompted for at runtime -- nothing to edit for it.
 
   This script is idempotent-ish but not bulletproof — read it before running rather
   than blindly executing, especially the Sysmon config source (GitHub raw URL).
 #>
 
-# ---- EDIT THESE ----
-$ForwarderPassword = "CHANGE_ME_STRONG_PASSWORD"
-$IndexerAddr        = "192.168.1.192:9997"
-# ---------------------
+# ---- EDIT THIS ----
+$IndexerAddr = "192.168.1.192:9997"
+# --------------------
+
+# Forwarder admin password is prompted for at runtime rather than stored here --
+# this file lives in a git repo, so a hardcoded password would get committed.
 
 $ErrorActionPreference = "Stop"
 $work = "C:\SIEM-Setup"
@@ -26,6 +29,22 @@ Write-Host "== Checking elevation ==" -ForegroundColor Cyan
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Error "Not running elevated. Re-run this script from an Administrator PowerShell."
+    exit 1
+}
+
+Write-Host "== Checking the indexer is reachable ==" -ForegroundColor Cyan
+$idxHost, $idxPort = $IndexerAddr.Split(":")
+if (-not (Test-NetConnection -ComputerName $idxHost -Port $idxPort -WarningAction SilentlyContinue).TcpTestSucceeded) {
+    Write-Error "Can't reach $IndexerAddr. Check the Splunk machine is powered on, that its inbound firewall rule for $idxPort exists and still matches this machine's IP, and that `$IndexerAddr above is current. Not installing a forwarder pointed at nothing."
+    exit 1
+}
+Write-Host "   $IndexerAddr reachable." -ForegroundColor Green
+
+$secure = Read-Host "Set a password for this forwarder's local admin account" -AsSecureString
+$ForwarderPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+if ([string]::IsNullOrWhiteSpace($ForwarderPassword)) {
+    Write-Error "Empty password -- aborting."
     exit 1
 }
 
@@ -75,6 +94,11 @@ Write-Host "== Granting the forwarder's service account read access to protected
 Add-LocalGroupMember -Group "Event Log Readers" -Member "NT SERVICE\SplunkForwarder" -ErrorAction SilentlyContinue
 
 Write-Host "== Restarting Splunk Forwarder service ==" -ForegroundColor Cyan
-Restart-Service SplunkForwarder -Force
+# Restart-Service is avoided here on purpose: splunkd's shutdown routinely outruns the
+# default service-control timeout, so Restart-Service reports CouldNotStopService and
+# leaves the service STOPPED -- the stop actually succeeded, the start half never ran.
+# Stopping and starting as two steps waits properly.
+Stop-Service SplunkForwarder -Force
+Start-Service SplunkForwarder
 
 Write-Host "== Done. Verify with: Get-Service SplunkForwarder, Sysmon64 ==" -ForegroundColor Green
