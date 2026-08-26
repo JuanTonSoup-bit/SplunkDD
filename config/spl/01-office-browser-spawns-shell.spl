@@ -1,0 +1,14 @@
+# Title:  Office or browser spawning a shell
+# MITRE:  T1059 - Command and Scripting Interpreter
+# Data:   Sysmon EventCode 1 (Process Create)
+# Why:    Documents and web pages should not start command interpreters. This is the
+#         classic macro/exploit foothold: a user opens an attachment, the Office process
+#         spawns cmd or powershell, and the actual payload runs from there.
+# Noise:  Low on a workstation. Chrome spawning cmd.exe occasionally comes from installer
+#         and updater flows -- check CommandLine before calling it malicious.
+
+index=endpoint source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+    parent_process_name IN ("WINWORD.EXE","EXCEL.EXE","POWERPNT.EXE","OUTLOOK.EXE","MSACCESS.EXE","chrome.exe","msedge.exe","firefox.exe")
+    process_name IN ("cmd.exe","powershell.exe","pwsh.exe","wscript.exe","cscript.exe","mshta.exe","rundll32.exe","regsvr32.exe")
+| table _time, host, user, parent_process_name, process_name, CommandLine
+| sort - _time

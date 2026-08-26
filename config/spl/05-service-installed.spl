@@ -1,0 +1,15 @@
+# Title:  New Windows service installed
+# MITRE:  T1543.003 - Create or Modify System Process: Windows Service
+# Data:   System channel, EventCode 7045 (classic WinEventLog, not XML)
+# Why:    Services run as SYSTEM and start automatically, which makes service creation a
+#         favourite persistence and privilege-escalation route. PsExec and most lateral
+#         movement tooling leaves a 7045 behind.
+# Noise:  Legitimate software installs create services. Volume is low enough on a
+#         workstation to review each one, which is the right posture for this detection.
+# NOTE:   Field names beyond EventCode are unverified -- the Security/System channels use
+#         classic rendering and Splunk_TA_windows extraction, which has not been confirmed
+#         on this instance yet. EventCode itself is always present.
+
+index=endpoint source="WinEventLog:System" EventCode=7045
+| table _time, host, Service_Name, Service_File_Name, Service_Type, Service_Start_Type
+| sort - _time

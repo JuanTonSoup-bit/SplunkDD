@@ -1,0 +1,13 @@
+# Title:  Windows event log cleared
+# MITRE:  T1070.001 - Indicator Removal: Clear Windows Event Logs
+# Data:   Security channel EventCode 1102, System channel EventCode 104
+# Why:    Almost nothing clears an event log during normal operation. This is close to a
+#         zero-false-positive detection and should be treated as high severity: it means
+#         either someone is covering tracks, or an admin did something they should be able
+#         to account for.
+# Noise:  Effectively none. If this fires, find out why.
+# NOTE:   Field names beyond EventCode are unverified -- see note in 05.
+
+index=endpoint (source="WinEventLog:Security" EventCode=1102) OR (source="WinEventLog:System" EventCode=104)
+| table _time, host, source, EventCode, user
+| sort - _time

@@ -1,0 +1,14 @@
+# Title:  Scheduled task created from the command line
+# MITRE:  T1053.005 - Scheduled Task
+# Data:   Sysmon EventCode 1 (Process Create)
+# Why:    Scheduled tasks are a durable persistence mechanism that survives reboot. Admins
+#         usually create them through the GUI or Group Policy; command-line creation is
+#         more characteristic of scripted install or an attacker establishing persistence.
+# Noise:  Software installers do this legitimately. The parent process is the tell --
+#         a task created by an installer differs from one created by a shell.
+
+index=endpoint source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+    (process_name="schtasks.exe" AND CommandLine="*/create*")
+    OR (process_name="at.exe")
+| table _time, host, user, parent_process_name, process_name, CommandLine
+| sort - _time

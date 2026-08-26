@@ -1,0 +1,16 @@
+# Title:  Encoded or obfuscated PowerShell
+# MITRE:  T1059.001 - PowerShell
+# Data:   Sysmon EventCode 1 (Process Create)
+# Why:    Base64-encoded commands are how attackers get a payload past command-line
+#         inspection and avoid quoting problems. Legitimate admin scripting almost never
+#         needs -EncodedCommand.
+# Noise:  Some management software (SCCM, monitoring agents, a few installers) genuinely
+#         uses -enc. Baseline for a week, then exclude by parent_process_name rather than
+#         by command content -- excluding on content is how you blind the detection.
+
+index=endpoint source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+    process_name IN ("powershell.exe","pwsh.exe")
+    (CommandLine="*-enc*" OR CommandLine="*-EncodedCommand*" OR CommandLine="*FromBase64String*"
+     OR CommandLine="*-w hidden*" OR CommandLine="*-WindowStyle Hidden*")
+| table _time, host, user, parent_process_name, process_name, CommandLine
+| sort - _time

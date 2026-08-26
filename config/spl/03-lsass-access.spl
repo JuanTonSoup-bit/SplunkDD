@@ -1,0 +1,15 @@
+# Title:  LSASS memory access
+# MITRE:  T1003.001 - OS Credential Dumping: LSASS Memory
+# Data:   Sysmon EventCode 10 (ProcessAccess)
+# Why:    LSASS holds credential material in memory. Anything opening a handle to it with
+#         read-memory rights is either a security product or someone dumping credentials.
+#         This is the single highest-value Sysmon detection on a Windows endpoint.
+# Noise:  Real, and it needs tuning. AV/EDR, and some Windows components, touch LSASS
+#         constantly. The GrantedAccess filter below targets the masks associated with
+#         memory reads; broaden it only after you know your own baseline.
+
+index=endpoint source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=10
+    TargetImage="*\lsass.exe"
+    (GrantedAccess="0x1010" OR GrantedAccess="0x1410" OR GrantedAccess="0x143a" OR GrantedAccess="0x1438" OR GrantedAccess="0x1f0fff")
+| table _time, host, SourceImage, TargetImage, GrantedAccess, CallTrace
+| sort - _time
