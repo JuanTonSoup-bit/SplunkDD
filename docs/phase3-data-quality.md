@@ -31,4 +31,18 @@ network. Once Tailscale is set up (Phase 5) this could be switched to the Tailsc
 instead, but there's no need to — 9997 forwarder traffic doesn't need to leave the LAN,
 only the Splunk Web UI needs remote access.
 
-## Status: ⬜ waiting on you to do steps 1–2 in Splunk Web, then confirm
+## 3. Firewall — inbound rule for 9997 (discovered as a blocker, not originally planned)
+
+This machine's network profile is `Public`, and Windows Firewall had no rule allowing
+inbound traffic on 9997 at all — Splunk's installer doesn't create one automatically.
+Without this, the main PC's forwarder would connect to nothing and fail silently.
+
+Run **elevated** on this machine, scoped to only the main PC's IP (not open to the
+whole LAN):
+```powershell
+New-NetFirewallRule -DisplayName "Splunk Receiving 9997" -Direction Inbound -LocalPort 9997 -Protocol TCP -Action Allow -RemoteAddress 192.168.1.90 -Profile Any
+```
+Verified working: `Get-NetTCPConnection -LocalPort 9997` showed an `Established`
+connection from `192.168.1.90` once the main PC's forwarder came up.
+
+## Status: ✅ Done — index created, receiving port open, firewall rule scoped to the main PC's IP, confirmed receiving data (see phase2 doc)

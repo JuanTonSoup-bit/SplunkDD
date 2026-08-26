@@ -27,9 +27,9 @@ splunk/
 |---|---|---|
 | 0 | Decisions | ✅ Done |
 | 1 | Install Splunk (this machine) | ✅ Done — Splunkd running, ports 8000/8089 confirmed open |
-| 3a | Indexer setup (index + receiving port) | ⬜ Waiting on you — see `phase3-data-quality.md` steps 1–2 |
-| 2 | Instrument main PC (Sysmon + UF) | ⬜ Script ready in `main-pc-scripts/` — see `phase2-instrument-main-pc.md` |
-| 3b | Field extraction / data quality | ⬜ Not started — after Phase 2 data is confirmed flowing |
+| 3a | Indexer setup (index + receiving port + firewall) | ✅ Done |
+| 2 | Instrument main PC (Sysmon + UF) | ✅ Done — all 4 sourcetypes confirmed flowing into `index=endpoint` |
+| 3b | Field extraction / data quality | ⬜ Not started — next up |
 | 4 | Detection & alerting content | ⬜ Not started |
 | 5 | Tailscale exposure | ⬜ Not started |
 | 6 | Wrap-up | ⬜ Not started |

@@ -59,4 +59,35 @@ worth a skim before running if you want to eyeball what it's configuring — it'
 Sysmon event-filtering rules, not executable code, so the risk is low, but worth being
 aware of what "run this script" is fetching and applying.
 
-## Status: ⬜ not started — waiting on Phase 3 steps 1–2, then handoff to you
+## Troubleshooting hit during setup: Sysmon channel access denied
+
+After running the script and confirming both services (`Sysmon64`, `SplunkForwarder`)
+were `Running`, Security/System/PowerShell events showed up in `index=endpoint`, but
+**Sysmon events did not**.
+
+Root cause, found via `splunkd.log`:
+```
+WinEventLogChannel::init: Init failed, unable to subscribe to Windows Event Log channel
+'Microsoft-Windows-Sysmon/Operational': errorCode=5
+```
+`errorCode=5` = Access Denied. The Universal Forwarder service runs as the virtual
+service account `NT SERVICE\SplunkForwarder`, which is **not** a member of the local
+**Event Log Readers** group — and the Sysmon operational channel's ACL is tighter than
+Security/System, so it got rejected while the others didn't.
+
+Fix, run elevated on the main PC:
+```powershell
+Add-LocalGroupMember -Group "Event Log Readers" -Member "NT SERVICE\SplunkForwarder"
+Restart-Service SplunkForwarder -Force
+```
+Confirmed fixed: `index=endpoint | stats count by sourcetype` in Splunk Web showed
+`WinEventLog:Microsoft-Windows-Sysmon/Operational` with 1988 events after the restart.
+
+This fix is now folded into `setup-main-pc.ps1` itself (the `Add-LocalGroupMember`
+step, right after the forwarder install) — a fresh run on another machine won't hit
+this blind.
+
+## Status: ✅ Done — Sysmon64 and SplunkForwarder running, all four expected
+sourcetypes (`WinEventLog:Security`, `WinEventLog:System`,
+`WinEventLog:Microsoft-Windows-PowerShell/Operational`,
+`WinEventLog:Microsoft-Windows-Sysmon/Operational`) confirmed flowing into `index=endpoint`.

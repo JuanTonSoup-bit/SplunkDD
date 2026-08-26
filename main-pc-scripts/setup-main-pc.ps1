@@ -66,6 +66,14 @@ $localDir = "$ufHome\etc\system\local"
 New-Item -ItemType Directory -Force -Path $localDir | Out-Null
 Copy-Item -Path "$PSScriptRoot\inputs.conf" -Destination "$localDir\inputs.conf" -Force
 
+Write-Host "== Granting the forwarder's service account read access to protected event channels ==" -ForegroundColor Cyan
+# The UF service runs as the virtual account NT SERVICE\SplunkForwarder, which is NOT
+# in Event Log Readers by default. Without this, subscribing to the Sysmon operational
+# channel (and any other tightly-ACL'd channel) fails silently with errorCode=5
+# (Access Denied) in splunkd.log, while looser channels like Security/System still work
+# — so the failure is easy to miss until you check sourcetype counts.
+Add-LocalGroupMember -Group "Event Log Readers" -Member "NT SERVICE\SplunkForwarder" -ErrorAction SilentlyContinue
+
 Write-Host "== Restarting Splunk Forwarder service ==" -ForegroundColor Cyan
 Restart-Service SplunkForwarder -Force
 
