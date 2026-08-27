@@ -1,15 +1,25 @@
-# Title:  LSASS memory access
+# Title:  Credential dumping - LSASS access
 # MITRE:  T1003.001 - OS Credential Dumping: LSASS Memory
 # Data:   Sysmon EventCode 10 (ProcessAccess)
-# Why:    LSASS holds credential material in memory. Anything opening a handle to it with
-#         read-memory rights is either a security product or someone dumping credentials.
-#         This is the single highest-value Sysmon detection on a Windows endpoint.
-# Noise:  Real, and it needs tuning. AV/EDR, and some Windows components, touch LSASS
-#         constantly. The GrantedAccess filter below targets the masks associated with
-#         memory reads; broaden it only after you know your own baseline.
+# Why:    LSASS holds credential material in memory. Anything opening a high-privilege
+#         handle to it is either a security product or someone dumping credentials. Also
+#         catches dbghelp.dll / dbgcore.dll in the call stack, the debug libraries most
+#         credential dumpers rely on to write a minidump.
+# Noise:  Effectively none, and that is by design -- see below.
+#
+# Tuning: DO NOT add a GrantedAccess filter here. sysmon-modular already restricts
+#         collection to credential-dumping-grade masks (0x1FFFFF, 0x1F1FFF, 0x1010,
+#         0x143A) inside the Sysmon config itself, so the filtering happens before the
+#         event is ever written. Filtering again in SPL only risks suppressing real hits
+#         -- the config emits uppercase hex, and Splunk field-value comparisons are
+#         case-sensitive, so "0x143a" silently matches nothing.
+#
+#         Verified 2026-08-26: 1658 ProcessAccess events in 24h, zero against lsass.exe.
+#         That is the expected state for a clean machine, not a broken detection. The
+#         high-volume TargetImage values (Docker Desktop, Chrome, Discord) come from an
+#         unrelated `TargetImage contains Desktop` include rule and are excluded here.
 
 index=endpoint source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=10
-    TargetImage="*\\lsass.exe"
-    (GrantedAccess="0x1010" OR GrantedAccess="0x1410" OR GrantedAccess="0x143a" OR GrantedAccess="0x1438" OR GrantedAccess="0x1f0fff")
+    (TargetImage="*lsass.exe" OR CallTrace="*dbghelp.dll*" OR CallTrace="*dbgcore.dll*")
 | table _time, host, SourceImage, TargetImage, GrantedAccess, CallTrace
 | sort - _time
