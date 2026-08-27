@@ -29,8 +29,8 @@ splunk/
 | 1 | Install Splunk (this machine) | ✅ Done — Splunkd running, ports 8000/8089 confirmed open |
 | 3a | Indexer setup (index + receiving port + firewall) | ✅ Done |
 | 2 | Instrument main PC (Sysmon + UF) | ✅ Done — all 4 sourcetypes confirmed flowing into `index=endpoint` |
-| 3b | Field extraction / data quality | ⬜ Not started — next up |
-| 4 | Detection & alerting content | ⬜ Not started |
+| 3b | Field extraction / data quality | ✅ Done — Windows + Sysmon add-ons installed, CIM fields verified |
+| 4 | Detection & alerting content | 🟡 Mostly done — 6 detections written, 5 scheduled; LSASS one pending tuning |
 | 5 | Tailscale exposure | ⬜ Not started |
 | 6 | Wrap-up | ⬜ Not started |
 

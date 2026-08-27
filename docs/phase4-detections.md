@@ -63,4 +63,21 @@ Worth triggering each at least once the way 02 was.
   collection started, so the columns have never been populated. Installing any piece of
   software will generate one and settle it.
 
-## Status: 🟡 in progress — content written and validated, alerts being created
+## Status: ✅ alerts live 2026-08-26 — five of six scheduled and enabled
+
+Created as saved alerts in Splunk Web (`Settings → Searches, reports, and alerts`):
+Encoded Powershell, Event Log Cleared, New Service Installed, Office or Browser Spawning
+Shell, Scheduled task Created. All enabled, all on `*/15 * * * *`.
+
+Detection 03 (LSASS) is deliberately not scheduled — see Known gaps above.
+
+### Gotcha worth remembering
+
+The first save attempt failed with `rt time values are not allowed`. Cause: the alert's
+Time Range was set to `1 hour window`, which is Splunk's **real-time** rolling window, not
+the relative `Last 60 minutes`. Scheduled alerts reject real-time ranges. The two sit
+next to each other in the time picker and read almost identically.
+
+Same distinction matters for ad-hoc searching: the `... window` presets open a persistent
+real-time search, which is noticeably heavier on an indexer that is also acting as search
+head. Prefer `Last 60 minutes` / `Last 24 hours`.
