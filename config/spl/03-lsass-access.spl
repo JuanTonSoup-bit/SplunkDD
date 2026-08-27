@@ -8,13 +8,19 @@
 # Noise:  Effectively none, and that is by design -- see below.
 #
 # Tuning: DO NOT add a GrantedAccess filter here. sysmon-modular already restricts
-#         collection to credential-dumping-grade masks (0x1FFFFF, 0x1F1FFF, 0x1010,
-#         0x143A) inside the Sysmon config itself, so the filtering happens before the
-#         event is ever written. Filtering again in SPL only risks suppressing real hits
-#         -- the config emits uppercase hex, and Splunk field-value comparisons are
-#         case-sensitive, so "0x143a" silently matches nothing.
+#         collection against lsass to credential-dumping-grade masks inside the Sysmon
+#         config itself, so the filtering happens before the event is ever written.
+#         Filtering again in SPL adds nothing and only risks suppressing a real hit.
+#
+#         Case note: the config XML writes these masks uppercase (0x1F1FFF) but they
+#         arrive in Splunk lowercase (0x1f1fff). Splunk field-value comparisons are
+#         case-sensitive, so anyone copying masks straight out of the config into SPL
+#         will get a filter that silently matches nothing. Another reason not to.
 #
 #         Verified 2026-08-26: 1658 ProcessAccess events in 24h, zero against lsass.exe.
+#         The credential-dumping masks (0x1fffff, 0x1410, 0x1010) DO appear in the data,
+#         but against Docker/Chrome/Discord via the `contains Desktop` include rule --
+#         not against lsass. Mask presence alone means nothing without the target.
 #         That is the expected state for a clean machine, not a broken detection. The
 #         high-volume TargetImage values (Docker Desktop, Chrome, Discord) come from an
 #         unrelated `TargetImage contains Desktop` include rule and are excluded here.
