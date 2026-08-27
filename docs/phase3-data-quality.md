@@ -52,7 +52,7 @@ New-NetFirewallRule -DisplayName "Splunk Web 8000" -Direction Inbound -LocalPort
 ```
 Verified: rule shows `Profile: Any`, `RemoteAddress: 192.168.1.90`.
 
-### Known fragility: both rules are pinned to a DHCP address
+### Resolved: both rules are pinned to an address, now reserved
 
 Scoping to `-RemoteAddress 192.168.1.90` is the right call security-wise — it beats
 opening these ports to the whole LAN. But `192.168.1.90` is a **DHCP lease** on the main
@@ -64,11 +64,13 @@ nasty to read:
 - `index=endpoint` just goes quiet, with no error surfaced in Splunk Web
 - Splunk Web stops loading from the main PC with a *timeout* rather than a refusal
 
-The fix is a **DHCP reservation** for the main PC's MAC on the router, which pins
-`192.168.1.90` permanently. Worth doing before Phase 4 — a detection lab that quietly
-stops receiving data is worse than one that's obviously broken.
+**Resolved 2026-08-26:** a DHCP reservation for the main PC now pins `192.168.1.90` on
+the router. `PrefixOrigin` still reports `Dhcp`, which is correct — a reservation means
+the router hands back the same address each time, rather than the host claiming it
+statically and risking a conflict.
 
-Same reasoning applies to the laptop's own `192.168.1.192`, which `$IndexerAddr` in
-`main-pc-scripts/setup-main-pc.ps1` is hardcoded to. Reserve both.
+The laptop's own `192.168.1.192` is still unreserved. Lower priority: `$IndexerAddr` in
+`main-pc-scripts/setup-main-pc.ps1` hardcodes it, but that fails loudly (the script's
+preflight refuses to run) rather than silently.
 
 ## Status: ✅ Done — index created, receiving port open, firewall rule scoped to the main PC's IP, confirmed receiving data (see phase2 doc)
