@@ -8,7 +8,6 @@
 #         a task created by an installer differs from one created by a shell.
 
 index=endpoint source="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
-    (process_name="schtasks.exe" AND CommandLine="*/create*")
-    OR (process_name="at.exe")
+    ((process_name="schtasks.exe" AND CommandLine="*/create*") OR process_name="at.exe")
 | table _time, host, user, parent_process_name, process_name, CommandLine
 | sort - _time
